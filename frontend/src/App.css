@@ -1,38 +1,230 @@
-.App {
-  text-align: center;
+/* --- RESET & BASE STYLES --- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+body {
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+  line-height: 1.5;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+/* --- MAIN LAYOUT --- */
+.dashboard-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+/* --- SIDEBAR --- */
+.sidebar {
+  width: 260px;
+  background-color: #0f172a; /* Deep dark blue */
+  color: #f8fafc;
   display: flex;
   flex-direction: column;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+  padding: 30px 20px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 1px;
+  border-bottom: 1px solid #1e293b;
+  color: #38bdf8; /* Light blue accent */
+}
+
+.nav-links {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.nav-item {
+  padding: 15px 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: #94a3b8;
+  display: flex;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  font-weight: 500;
+}
+
+.nav-item:hover {
+  background-color: #1e293b;
+  color: #f8fafc;
+  padding-left: 30px;
+}
+
+.nav-item.active {
+  background-color: #38bdf8;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+/* --- MAIN CONTENT AREA --- */
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 50px;
+}
+
+.header {
+  background: #ffffff;
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header h2 {
+  font-size: 1.5rem;
+  color: #0f172a;
+}
+
+.add-btn {
+  background: #0284c7;
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
 }
 
-.App-link {
-  color: #61dafb;
+.add-btn:hover {
+  background: #0369a1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* --- STATS CARDS GRID --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 25px;
+  padding: 30px 40px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border-left: 6px solid #0284c7;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card.critical {
+  border-left-color: #ef4444; /* Red for alerts */
+}
+
+.card.pulse {
+  border-left-color: #10b981; /* Green for health */
+}
+
+.card h3 {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+
+.card p {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+/* --- TABLE CONTAINER --- */
+.table-container {
+  margin: 0 40px;
+  background: white;
+  padding: 30px;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.table-container h3 {
+  margin-bottom: 20px;
+  color: #0f172a;
+  font-size: 1.25rem;
+}
+
+.med-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.med-table th {
+  text-align: left;
+  padding: 15px;
+  background-color: #f8fafc;
+  color: #64748b;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.med-table td {
+  padding: 18px 15px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.med-table tr:hover {
+  background-color: #f8fafc;
+}
+
+/* --- STATUS TAGS --- */
+.status-tag {
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-tag.ok {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-tag.low {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* --- STATE MESSAGES --- */
+.loading-text, .empty-text {
+  text-align: center;
+  padding: 60px;
+  color: #94a3b8;
+  font-style: italic;
+}
+.add-med-form {
+  display: flex;
+  gap: 10px;
+}
+
+.add-med-form input {
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  outline: none;
+}
+
+.add-med-form input:focus {
+  border-color: #38bdf8;
 }
