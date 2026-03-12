@@ -7,7 +7,7 @@
 
 body {
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background-color: #f8fafc;
+  background: linear-gradient(135deg,#f1f5ff,#e0f2fe,#f8fafc);
   color: #1e293b;
   line-height: 1.5;
 }
@@ -23,11 +23,11 @@ body {
 /* --- SIDEBAR --- */
 .sidebar {
   width: 260px;
-  background-color: #0f172a; /* Deep dark blue */
+  background: linear-gradient(180deg,#0f172a,#1e293b);
   color: #f8fafc;
   display: flex;
   flex-direction: column;
-  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
 }
 
 .sidebar-header {
@@ -36,8 +36,8 @@ body {
   font-weight: 800;
   text-align: center;
   letter-spacing: 1px;
-  border-bottom: 1px solid #1e293b;
-  color: #38bdf8; /* Light blue accent */
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  color: #38bdf8;
 }
 
 .nav-links {
@@ -56,13 +56,13 @@ body {
 }
 
 .nav-item:hover {
-  background-color: #1e293b;
+  background: linear-gradient(90deg,#1e293b,#0f172a);
   color: #f8fafc;
   padding-left: 30px;
 }
 
 .nav-item.active {
-  background-color: #38bdf8;
+  background: linear-gradient(90deg,#38bdf8,#0ea5e9);
   color: #0f172a;
   font-weight: 700;
 }
@@ -74,13 +74,15 @@ body {
   padding-bottom: 50px;
 }
 
+/* --- HEADER --- */
 .header {
-  background: #ffffff;
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(10px);
   padding: 20px 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.05);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -92,18 +94,19 @@ body {
 }
 
 .add-btn {
-  background: #0284c7;
+  background: linear-gradient(135deg,#38bdf8,#0284c7);
   color: white;
   border: none;
   padding: 10px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .add-btn:hover {
-  background: #0369a1;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(2,132,199,0.3);
 }
 
 /* --- STATS CARDS GRID --- */
@@ -115,24 +118,25 @@ body {
 }
 
 .card {
-  background: white;
+  background: linear-gradient(145deg,#ffffff,#f1f5f9);
   padding: 25px;
   border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  border-left: 6px solid #0284c7;
-  transition: transform 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+  border-left: 6px solid #38bdf8;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .card:hover {
-  transform: translateY(-5px);
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.1);
 }
 
 .card.critical {
-  border-left-color: #ef4444; /* Red for alerts */
+  border-left-color: #ef4444;
 }
 
 .card.pulse {
-  border-left-color: #10b981; /* Green for health */
+  border-left-color: #10b981;
 }
 
 .card h3 {
@@ -151,10 +155,10 @@ body {
 /* --- TABLE CONTAINER --- */
 .table-container {
   margin: 0 40px;
-  background: white;
+  background: linear-gradient(145deg,#ffffff,#f8fafc);
   padding: 30px;
   border-radius: 16px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
 }
 
 .table-container h3 {
@@ -171,7 +175,7 @@ body {
 .med-table th {
   text-align: left;
   padding: 15px;
-  background-color: #f8fafc;
+  background-color: #f1f5f9;
   color: #64748b;
   font-weight: 600;
   border-bottom: 2px solid #e2e8f0;
@@ -213,6 +217,7 @@ body {
   color: #94a3b8;
   font-style: italic;
 }
+
 .add-med-form {
   display: flex;
   gap: 10px;
@@ -251,7 +256,7 @@ body {
 }
 
 .switch-profile-btn {
-  background: #64748b;
+  background: linear-gradient(135deg,#64748b,#475569);
   color: white;
   border: none;
   padding: 6px 12px;
@@ -259,9 +264,9 @@ body {
   cursor: pointer;
   font-size: 0.85rem;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: transform 0.2s;
 }
 
 .switch-profile-btn:hover {
-  background: #475569;
+  transform: translateY(-1px);
 }

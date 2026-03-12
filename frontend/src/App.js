@@ -1,9 +1,18 @@
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import "./App.css";
+import "./App.css"; // Kept for any residual styles not in tailwind
 import Login from "./login";
 import HouseholdSelection from "./HouseholdSelection";
+
+// Modern UI Components
+import SidebarNavigation from "./components/dashboard/SidebarNavigation";
+import DashboardHeader from "./components/dashboard/DashboardHeader";
+import StatCard from "./components/dashboard/StatCard";
+import MedicineInventoryTable from "./components/dashboard/MedicineInventoryTable";
+import LowStockAlerts from "./components/dashboard/LowStockAlerts";
+import RecentActivityPanel from "./components/dashboard/RecentActivityPanel";
+import { Package, AlertTriangle, Building2, Plus, X } from 'lucide-react';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -13,6 +22,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState("");
   const [newStock, setNewStock] = useState("");
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const fetchMedicines = async () => {
     if (!selectedMember) return;
@@ -53,6 +63,7 @@ function App() {
 
       setNewName("");
       setNewStock("");
+      setShowAddForm(false);
       fetchMedicines();
     } catch (error) {
       alert("Error adding medicine: " + error.message);
@@ -67,109 +78,113 @@ function App() {
     return <HouseholdSelection onSelectMember={setSelectedMember} onLogout={() => setIsLoggedIn(false)} />;
   }
 
+  const lowStockCount = medicines.filter((m) => m.stock < 10 && m.stock > 0).length;
+  const criticalCount = medicines.filter((m) => m.stock === 0).length;
+  const totalAlerts = lowStockCount + criticalCount;
+
   return (
-    <div className="dashboard-container">
-      <aside className="sidebar">
-        <div className="sidebar-header">IIT-BHU Care</div>
-        <nav className="nav-links">
-          <div className="nav-item active">🏠 Dashboard</div>
-          <div className="nav-item">💊 Medicine Stock</div>
-          <div className="nav-item">🏥 Hospitals</div>
-        </nav>
-      </aside>
+    <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
+      {/* Fixed Sidebar */}
+      <SidebarNavigation activeTab="Dashboard" />
 
-      <main className="main-content">
-        <header className="header">
-          <div className="header-top">
-            <div className="profile-info">
-              {selectedMember.avatar === "neutral-placeholder" ? (
-                <div style={{ width: '40px', height: '40px', borderRadius: '50%', backgroundColor: '#0284c7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                  {selectedMember.name.charAt(0).toUpperCase()}
-                </div>
-              ) : (
-                <img src={selectedMember.avatar} alt="Avatar" className="header-avatar" />
-              )}
-              <h2>{selectedMember.name}'s Health Dashboard</h2>
+      {/* Main Content Area */}
+      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+        <DashboardHeader 
+          selectedMember={selectedMember} 
+          onSwitchProfile={() => setSelectedMember(null)} 
+        />
+
+        {/* Scrollable Main Content */}
+        <main className="flex-1 overflow-y-auto p-8 bg-slate-50/50">
+          <div className="max-w-7xl mx-auto space-y-8">
+            
+            {/* Top Toolbar */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800">Overview</h2>
+                <p className="text-slate-500 mt-1 text-sm">Monitor your family's healthcare inventory</p>
+              </div>
+              
+              <button 
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-sm shadow-blue-200 flex items-center space-x-2"
+              >
+                {showAddForm ? <X className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                <span>{showAddForm ? 'Cancel' : 'Add Medicine'}</span>
+              </button>
             </div>
-            <button className="switch-profile-btn" onClick={() => setSelectedMember(null)}>
-              Switch Profile
-            </button>
+
+            {/* Expandable Add Form */}
+            {showAddForm && (
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 animate-in fade-in slide-in-from-top-4">
+                <h3 className="text-lg font-bold text-slate-800 mb-4">Add New Medicine</h3>
+                <form onSubmit={handleAddMedicine} className="flex gap-4 items-end">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Medicine Name</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Paracetamol 500mg"
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                    />
+                  </div>
+                  <div className="w-48">
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Stock Amount</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={newStock}
+                      onChange={(e) => setNewStock(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                    />
+                  </div>
+                  <button type="submit" className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium transition-colors h-[46px]">
+                    Save to Inventory
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {/* Stat Cards Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatCard 
+                title="Total Inventory" 
+                value={medicines.length} 
+                icon={Package} 
+                colorClass="bg-blue-500" 
+                highlightClass="bg-blue-500" 
+              />
+              <StatCard 
+                title="Alerts (Low/Empty)" 
+                value={totalAlerts} 
+                icon={AlertTriangle} 
+                colorClass="bg-amber-500" 
+                highlightClass="bg-amber-500" 
+              />
+              <StatCard 
+                title="Active Hospitals" 
+                value={12} 
+                icon={Building2} 
+                colorClass="bg-emerald-500" 
+                highlightClass="bg-emerald-500" 
+              />
+            </div>
+
+            {/* Main Content Grid: Table and Panels */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-8">
+                <MedicineInventoryTable medicines={medicines} loading={loading} />
+              </div>
+              <div className="space-y-8">
+                <LowStockAlerts medicines={medicines} />
+                <RecentActivityPanel />
+              </div>
+            </div>
+
           </div>
-
-          <form onSubmit={handleAddMedicine} className="add-med-form">
-            <input
-              type="text"
-              placeholder="Med Name"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-            />
-
-            <input
-              type="number"
-              placeholder="Stock"
-              value={newStock}
-              onChange={(e) => setNewStock(e.target.value)}
-            />
-
-            <button type="submit" className="add-btn">
-              Add to Stock
-            </button>
-          </form>
-        </header>
-
-        <section className="stats-grid">
-          <div className="card">
-            <h3>Total Inventory</h3>
-            <p>{medicines.length}</p>
-          </div>
-
-          <div className="card critical">
-            <h3>Low Stock Alerts</h3>
-            <p>{medicines.filter((m) => m.stock < 10).length}</p>
-          </div>
-
-          <div className="card pulse">
-            <h3>Active Hospitals</h3>
-            <p>12</p>
-          </div>
-        </section>
-
-        <section className="table-container">
-          <h3>Medicine Inventory</h3>
-
-          {loading ? (
-            <p className="loading-text">Fetching data...</p>
-          ) : (
-            <table className="med-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Stock</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {medicines.map((med) => (
-                  <tr key={med.id}>
-                    <td>{med.name}</td>
-                    <td>{med.stock}</td>
-                    <td>
-                      <span
-                        className={`status-tag ${
-                          med.stock < 10 ? "low" : "ok"
-                        }`}
-                      >
-                        {med.stock < 10 ? "Low" : "Available"}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </section>
-      </main>
+        </main>
+      </div>
     </div>
   );
 }
