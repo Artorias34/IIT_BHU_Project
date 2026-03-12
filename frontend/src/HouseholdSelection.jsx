@@ -22,6 +22,9 @@ function HouseholdSelection({ onSelectMember, onLogout }) {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
 
+  // Ref to prevent StrictMode double-creation race condition
+  const creatingProfile = useRef(false);
+
   const fetchProfiles = async () => {
     try {
       const currentUser = auth.currentUser;
@@ -31,6 +34,10 @@ function HouseholdSelection({ onSelectMember, onLogout }) {
       const querySnapshot = await getDocs(q);
       
       if (querySnapshot.empty) {
+        // Prevent concurrent executions from rendering double profiles
+        if (creatingProfile.current) return;
+        creatingProfile.current = true;
+
         // Create initial profile for the logged in user
         const initialProfile = {
           name: currentUser.displayName || "My Profile",
@@ -49,8 +56,12 @@ function HouseholdSelection({ onSelectMember, onLogout }) {
       }
     } catch (error) {
       console.error("Error fetching profiles:", error);
-    } finally {
       setLoading(false);
+    } finally {
+      // Force loading state to dismiss after max 1000ms (1 sec) to meet user request
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
     }
   };
 
