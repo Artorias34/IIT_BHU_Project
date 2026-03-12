@@ -19,13 +19,15 @@ import MedicineCalendar from "./components/dashboard/MedicineCalendar";
 import MedicalReports from "./components/dashboard/MedicalReports";
 import MedicineInsights from "./components/dashboard/MedicineInsights";
 
-import { Package, AlertTriangle, Building2, Plus, X, Clock, ShieldAlert, CalendarDays } from 'lucide-react';
+import { Package, AlertTriangle, Building2, Plus, X, Clock, ShieldAlert, CalendarDays, AlertCircle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [showLowStockWarning, setShowLowStockWarning] = useState(false);
+  const [lowStockWarningMeds, setLowStockWarningMeds] = useState([]);
 
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -65,6 +67,17 @@ function App() {
     }
   }, [selectedMember]);
 
+  // Show low stock warning popup after medicines load
+  useEffect(() => {
+    if (medicines.length > 0) {
+      const criticalMeds = medicines.filter(m => m.stock !== undefined && m.stock < 2);
+      if (criticalMeds.length > 0) {
+        setLowStockWarningMeds(criticalMeds);
+        setShowLowStockWarning(true);
+      }
+    }
+  }, [medicines]);
+
   const toggleScheduleTime = (time) => {
     setNewScheduleTimes(prev => {
       if (prev.includes(time)) {
@@ -83,6 +96,8 @@ function App() {
     if (!selectedMember) return alert("Please select a household member first");
 
     try {
+      const existingMed = medicines.find(m => m.name === newName);
+      
       const medicineData = {
         name: newName,
         stock: Number(newStock),
@@ -94,14 +109,21 @@ function App() {
         scheduleTimes: newScheduleTimes,
         durationDays: newDurationDays ? Number(newDurationDays) : 0,
         startDate: Timestamp.now(),
-        taken: {},
+        // Keep existing taken status if updating
+        taken: existingMed ? existingMed.taken || {} : {},
       };
 
       if (newExpiryDate) {
         medicineData.expiryDate = Timestamp.fromDate(new Date(newExpiryDate));
       }
 
-      await addDoc(collection(db, "medicines"), medicineData);
+      if (existingMed) {
+        // Update existing medicine
+        await updateDoc(doc(db, "medicines", existingMed.id), medicineData);
+      } else {
+        // Add new medicine
+        await addDoc(collection(db, "medicines"), medicineData);
+      }
 
       // Reset form
       setNewName("");
@@ -115,7 +137,7 @@ function App() {
       setShowAddForm(false);
       fetchMedicines();
     } catch (error) {
-      alert("Error adding medicine: " + error.message);
+      alert("Error saving medicine: " + error.message);
     }
   };
 
@@ -128,18 +150,32 @@ function App() {
       const dayTaken = taken[dateKey] || [];
       
       let updatedDayTaken;
+      let stockChange = 0;
+
       if (dayTaken.includes(timeSlot)) {
+        // Unmarking as taken → restore stock +1
         updatedDayTaken = dayTaken.filter(t => t !== timeSlot);
+        stockChange = 1;
       } else {
+        // Marking as taken → reduce stock -1
+        if (med.stock <= 0) {
+          alert(`${med.name} is out of stock! Please refill before taking.`);
+          return;
+        }
         updatedDayTaken = [...dayTaken, timeSlot];
+        stockChange = -1;
       }
 
       const updatedTaken = { ...taken, [dateKey]: updatedDayTaken };
+      const updatedStock = Math.max(0, (med.stock || 0) + stockChange);
 
-      await updateDoc(doc(db, "medicines", medicineId), { taken: updatedTaken });
+      await updateDoc(doc(db, "medicines", medicineId), { 
+        taken: updatedTaken,
+        stock: updatedStock 
+      });
 
       setMedicines(prev => prev.map(m => 
-        m.id === medicineId ? { ...m, taken: updatedTaken } : m
+        m.id === medicineId ? { ...m, taken: updatedTaken, stock: updatedStock } : m
       ));
     } catch (error) {
       console.error("Error toggling taken:", error);
@@ -232,14 +268,27 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Medicine Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Paracetamol 500mg"
+                <select
                   value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
+                  onChange={(e) => {
+                    const selected = medicines.find(m => m.name === e.target.value);
+                    setNewName(e.target.value);
+                    if (selected) {
+                      setNewStock(String(selected.stock || 0));
+                      setNewDosage(selected.dosage || '');
+                      setNewInstructions(selected.instructions || '');
+                    }
+                  }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
                   required
-                />
+                >
+                  <option value="">Select from inventory...</option>
+                  {medicines.map(med => (
+                    <option key={med.id} value={med.name}>
+                      {med.name} (Stock: {med.stock})
+                    </option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Stock *</label>
@@ -434,6 +483,43 @@ function App() {
           </div>
         </main>
       </div>
+
+      {/* Low Stock Warning Popup */}
+      {showLowStockWarning && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+            <div className="bg-red-500 p-6 flex items-center justify-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+                <AlertCircle className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            <div className="p-8 text-center">
+              <h3 className="text-2xl font-black text-slate-800 mb-2">Stock Alert!</h3>
+              <p className="text-slate-500 mb-6 font-medium">
+                The following medicines are running out. Please refill immediately to avoid missing doses.
+              </p>
+              
+              <div className="space-y-3 mb-8 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                {lowStockWarningMeds.map(med => (
+                  <div key={med.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
+                    <span className="font-bold text-red-700">{med.name}</span>
+                    <span className="bg-red-200 text-red-800 text-xs px-2 py-1 rounded-lg font-black">
+                      Only {med.stock} left
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowLowStockWarning(false)}
+                className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-200"
+              >
+                I'll Refill Immediately
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
