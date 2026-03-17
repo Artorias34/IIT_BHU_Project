@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "./firebase";
 import { collection, getDocs, addDoc, query, where } from "firebase/firestore";
-import "./App.css"; // Kept for any residual styles not in tailwind
+import "./App.css"; 
 import Login from "./login";
 import HouseholdSelection from "./HouseholdSelection";
 
@@ -14,10 +14,15 @@ import LowStockAlerts from "./components/dashboard/LowStockAlerts";
 import RecentActivityPanel from "./components/dashboard/RecentActivityPanel";
 import { Package, AlertTriangle, Building2, Plus, X } from 'lucide-react';
 
+// Import the ChatBot Component
+import GeminiChat from './components/dashboard/GeminiChat';
+
 function App() {
+  // Check if API Key is loaded in console
+  console.log("Gemini API Key Status:", process.env.REACT_APP_GEMINI_API_KEY ? "Loaded" : "Missing");
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
-
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
   const [newName, setNewName] = useState("");
@@ -148,27 +153,9 @@ function App() {
 
             {/* Stat Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard 
-                title="Total Inventory" 
-                value={medicines.length} 
-                icon={Package} 
-                colorClass="bg-blue-500" 
-                highlightClass="bg-blue-500" 
-              />
-              <StatCard 
-                title="Alerts (Low/Empty)" 
-                value={totalAlerts} 
-                icon={AlertTriangle} 
-                colorClass="bg-amber-500" 
-                highlightClass="bg-amber-500" 
-              />
-              <StatCard 
-                title="Active Hospitals" 
-                value={12} 
-                icon={Building2} 
-                colorClass="bg-emerald-500" 
-                highlightClass="bg-emerald-500" 
-              />
+              <StatCard title="Total Inventory" value={medicines.length} icon={Package} colorClass="bg-blue-500" highlightClass="bg-blue-500" />
+              <StatCard title="Alerts (Low/Empty)" value={totalAlerts} icon={AlertTriangle} colorClass="bg-amber-500" highlightClass="bg-amber-500" />
+              <StatCard title="Active Hospitals" value={12} icon={Building2} colorClass="bg-emerald-500" highlightClass="bg-emerald-500" />
             </div>
 
             {/* Main Content Grid: Table and Panels */}
@@ -181,10 +168,13 @@ function App() {
                 <RecentActivityPanel />
               </div>
             </div>
-
           </div>
         </main>
       </div>
+
+      {/* Renders ChatBot */}
+      <GeminiChat />
+
     </div>
   );
 }
