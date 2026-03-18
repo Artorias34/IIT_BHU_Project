@@ -24,12 +24,13 @@ const MedicineInventoryTable = ({ medicines, loading }) => {
               <th className="px-6 py-4 font-semibold">Medicine Name</th>
               <th className="px-6 py-4 font-semibold">Stock Level</th>
               <th className="px-6 py-4 font-semibold">Status</th>
+              <th className="px-6 py-4 font-semibold">Entries</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {medicines.length === 0 ? (
               <tr>
-                <td colSpan="3" className="px-6 py-8 text-center text-slate-500">
+                <td colSpan="4" className="px-6 py-8 text-center text-slate-500">
                   <Package className="w-12 h-12 text-slate-300 mx-auto mb-3" />
                   <p>No medicines found. Add some to get started.</p>
                 </td>
@@ -72,6 +73,9 @@ const MedicineInventoryTable = ({ medicines, loading }) => {
                           In Stock
                         </span>
                       )}
+                    </td>
+                    <td className="px-6 py-4 text-slate-500 text-sm font-medium">
+                      {med.entriesCount > 1 ? `Added ${med.entriesCount} times` : 'Added 1 time'}
                     </td>
                   </tr>
                 );

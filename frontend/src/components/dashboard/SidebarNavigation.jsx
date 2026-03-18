@@ -13,11 +13,7 @@ const SidebarNavigation = ({ activeTab = 'Dashboard', onTabChange }) => {
 
   return (
     <aside className="w-64 bg-white border-r border-slate-200 flex flex-col h-screen fixed top-0 left-0 z-20">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-          IIT-BHU Care
-        </h1>
-      </div>
+
       <nav className="flex-1 px-4 space-y-1 mt-4">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -38,12 +34,6 @@ const SidebarNavigation = ({ activeTab = 'Dashboard', onTabChange }) => {
           );
         })}
       </nav>
-      <div className="p-4 border-t border-slate-200">
-        <div className="bg-slate-50 rounded-xl p-4 text-sm text-slate-500 text-center">
-          <p>Powered by Codecure</p>
-          <p className="mt-1 font-medium text-slate-700">v2.0.0</p>
-        </div>
-      </div>
     </aside>
   );
 };

@@ -23,13 +23,48 @@ import MedicineStore from "./components/dashboard/MedicineStore";
 import { Package, AlertTriangle, Building2, Plus, X, Clock, ShieldAlert, CalendarDays, AlertCircle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
 import GeminiChat from './components/dashboard/GeminiChat';
+
+const initAuth = () => {
+  const authDataStr = localStorage.getItem('codecure_auth');
+  if (authDataStr) {
+    try {
+      const authData = JSON.parse(authDataStr);
+      const now = new Date().getTime();
+      const EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+      if (now - authData.timestamp < EXPIRY_MS && authData.isLoggedIn) {
+        return true;
+      } else {
+        localStorage.removeItem('codecure_auth');
+        localStorage.removeItem('codecure_profile');
+      }
+    } catch(e) {
+      localStorage.removeItem('codecure_auth');
+      localStorage.removeItem('codecure_profile');
+    }
+  }
+  return false;
+};
+
+const initProfile = () => {
+  const profileStr = localStorage.getItem('codecure_profile');
+  if (profileStr) {
+    try {
+      return JSON.parse(profileStr);
+    } catch(e) {
+      return null;
+    }
+  }
+  return null;
+};
+
 function App() {
   // Check if API Key is loaded in console
   console.log("Gemini API Key Status:", process.env.REACT_APP_GEMINI_API_KEY ? "Loaded" : "Missing");
 
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [selectedMember, setSelectedMember] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(initAuth);
+  const [selectedMember, setSelectedMember] = useState(initProfile);
   const [activeTab, setActiveTab] = useState('Dashboard');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showMedicineWarning, setShowMedicineWarning] = useState(false);
   const [warningMeds, setWarningMeds] = useState([]);
 
@@ -57,7 +92,19 @@ function App() {
         id: doc.id,
         ...doc.data(),
       }));
-      setMedicines(data);
+
+      const mergedMedsMap = new Map();
+      data.forEach(med => {
+        const lowerName = med.name.toLowerCase();
+        if (mergedMedsMap.has(lowerName)) {
+          const existing = mergedMedsMap.get(lowerName);
+          existing.stock += Number(med.stock || 0);
+          existing.entriesCount = (existing.entriesCount || 1) + 1;
+        } else {
+          mergedMedsMap.set(lowerName, { ...med, stock: Number(med.stock || 0), entriesCount: 1 });
+        }
+      });
+      setMedicines(Array.from(mergedMedsMap.values()));
     } catch (error) {
       console.error("Error fetching: ", error);
     } finally {
@@ -121,11 +168,11 @@ function App() {
     if (!selectedMember) return alert("Please select a household member first");
 
     try {
-      const existingMed = medicines.find(m => m.name === newName);
+      const existingMed = medicines.find(m => m.name.toLowerCase() === newName.toLowerCase());
       
       const medicineData = {
-        name: newName,
-        stock: Number(newStock),
+        name: existingMed ? existingMed.name : newName,
+        stock: existingMed ? Number(existingMed.stock || 0) + Number(newStock) : Number(newStock),
         dosage: newDosage || "1 tablet",
         instructions: newInstructions || "with water",
         category: selectedMember.name,
@@ -208,11 +255,25 @@ function App() {
   };
 
   if (!isLoggedIn) {
-    return <Login onLogin={() => setIsLoggedIn(true)} />;
+    return <Login onLogin={() => {
+      setIsLoggedIn(true);
+      localStorage.setItem('codecure_auth', JSON.stringify({ isLoggedIn: true, timestamp: new Date().getTime() }));
+    }} />;
   }
 
   if (!selectedMember) {
-    return <HouseholdSelection onSelectMember={setSelectedMember} onLogout={() => setIsLoggedIn(false)} />;
+    return <HouseholdSelection 
+      onSelectMember={(member) => {
+        setSelectedMember(member);
+        localStorage.setItem('codecure_profile', JSON.stringify(member));
+      }} 
+      onLogout={() => {
+        setIsLoggedIn(false);
+        setSelectedMember(null);
+        localStorage.removeItem('codecure_auth');
+        localStorage.removeItem('codecure_profile');
+      }} 
+    />;
   }
 
   // Computed stats
@@ -297,27 +358,27 @@ function App() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-1">
                 <label className="block text-sm font-medium text-slate-700 mb-1">Medicine Name *</label>
-                <select
+                <input
+                  type="text"
+                  list="medicineNames"
                   value={newName}
                   onChange={(e) => {
-                    const selected = medicines.find(m => m.name === e.target.value);
                     setNewName(e.target.value);
+                    const selected = medicines.find(m => m.name.toLowerCase() === e.target.value.toLowerCase());
                     if (selected) {
-                      setNewStock(String(selected.stock || 0));
                       setNewDosage(selected.dosage || '');
                       setNewInstructions(selected.instructions || '');
                     }
                   }}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 transition-all outline-none"
+                  placeholder="Enter medicine name"
                   required
-                >
-                  <option value="">Select from inventory...</option>
+                />
+                <datalist id="medicineNames">
                   {medicines.map(med => (
-                    <option key={med.id} value={med.name}>
-                      {med.name} (Stock: {med.stock})
-                    </option>
+                    <option key={med.id} value={med.name} />
                   ))}
-                </select>
+                </datalist>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Stock *</label>
@@ -496,13 +557,19 @@ function App() {
   return (
     <div className="flex h-screen bg-slate-50 font-sans overflow-hidden">
       {/* Fixed Sidebar */}
-      <SidebarNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {isSidebarOpen && (
+        <SidebarNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
 
       {/* Main Content Area */}
-      <div className="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+      <div className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
         <DashboardHeader 
           selectedMember={selectedMember} 
-          onSwitchProfile={() => setSelectedMember(null)} 
+          onSwitchProfile={() => {
+            setSelectedMember(null);
+            localStorage.removeItem('codecure_profile');
+          }} 
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         />
 
         {/* Scrollable Main Content */}
