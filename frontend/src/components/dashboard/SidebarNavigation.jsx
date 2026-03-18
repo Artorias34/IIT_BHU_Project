@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Pill, Building2, CalendarDays, FileText, BarChart3 } from 'lucide-react';
+import { Home, Pill, Building2, CalendarDays, FileText, BarChart3, Store } from 'lucide-react';
 
 const SidebarNavigation = ({ activeTab = 'Dashboard', onTabChange }) => {
   const navItems = [
@@ -8,7 +8,7 @@ const SidebarNavigation = ({ activeTab = 'Dashboard', onTabChange }) => {
     { name: 'Medical Reports', icon: FileText },
     { name: 'Insights', icon: BarChart3 },
     { name: 'Medicine Stock', icon: Pill },
-    { name: 'Hospitals', icon: Building2 },
+    { name: 'Medicine Store', icon: Store },
   ];
 
   return (

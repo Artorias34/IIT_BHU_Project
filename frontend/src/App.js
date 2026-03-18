@@ -18,6 +18,7 @@ import ExpiryAlerts from "./components/dashboard/ExpiryAlerts";
 import MedicineCalendar from "./components/dashboard/MedicineCalendar";
 import MedicalReports from "./components/dashboard/MedicalReports";
 import MedicineInsights from "./components/dashboard/MedicineInsights";
+import MedicineStore from "./components/dashboard/MedicineStore";
 
 import { Package, AlertTriangle, Building2, Plus, X, Clock, ShieldAlert, CalendarDays, AlertCircle } from 'lucide-react';
 import { differenceInDays } from 'date-fns';
@@ -29,8 +30,8 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [activeTab, setActiveTab] = useState('Dashboard');
-  const [showLowStockWarning, setShowLowStockWarning] = useState(false);
-  const [lowStockWarningMeds, setLowStockWarningMeds] = useState([]);
+  const [showMedicineWarning, setShowMedicineWarning] = useState(false);
+  const [warningMeds, setWarningMeds] = useState([]);
 
   const [medicines, setMedicines] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,13 +71,34 @@ function App() {
     }
   }, [selectedMember]);
 
-  // Show low stock warning popup after medicines load
+  // Show global warning popup after medicines load
   useEffect(() => {
     if (medicines.length > 0) {
-      const criticalMeds = medicines.filter(m => m.stock !== undefined && m.stock < 2);
+      const today = new Date();
+      const criticalMeds = medicines.filter(m => {
+        const isLowStock = m.stock !== undefined && m.stock < 2;
+        
+        let isExpiring = false;
+        if (m.expiryDate) {
+          const expiry = m.expiryDate.toDate ? m.expiryDate.toDate() : new Date(m.expiryDate);
+          const daysLeft = differenceInDays(expiry, today);
+          isExpiring = daysLeft <= 7;
+        }
+        
+        if (isLowStock || isExpiring) {
+          m.warningReason = isLowStock && isExpiring 
+            ? "Low stock & expiring soon" 
+            : isLowStock 
+              ? "Low stock" 
+              : "Expiring soon";
+          return true;
+        }
+        return false;
+      });
+
       if (criticalMeds.length > 0) {
-        setLowStockWarningMeds(criticalMeds);
-        setShowLowStockWarning(true);
+        setWarningMeds(criticalMeds);
+        setShowMedicineWarning(true);
       }
     }
   }, [medicines]);
@@ -238,6 +260,10 @@ function App() {
       case 'Insights':
         return (
           <MedicineInsights medicines={medicines} />
+        );
+      case 'Medicine Store':
+        return (
+          <MedicineStore />
         );
       default:
         return renderDashboard();
@@ -487,8 +513,8 @@ function App() {
         </main>
       </div>
 
-      {/* Low Stock Warning Popup */}
-      {showLowStockWarning && (
+      {/* Global Medicine Warning Popup */}
+      {showMedicineWarning && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
             <div className="bg-red-500 p-6 flex items-center justify-center">
@@ -497,28 +523,39 @@ function App() {
               </div>
             </div>
             <div className="p-8 text-center">
-              <h3 className="text-2xl font-black text-slate-800 mb-2">Stock Alert!</h3>
+              <h3 className="text-2xl font-black text-slate-800 mb-2">⚠ Medicine Warning</h3>
               <p className="text-slate-500 mb-6 font-medium">
-                The following medicines are running out. Please refill immediately to avoid missing doses.
+                The following medicines require your attention.
               </p>
               
               <div className="space-y-3 mb-8 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-                {lowStockWarningMeds.map(med => (
+                {warningMeds.map(med => (
                   <div key={med.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl border border-red-100">
-                    <span className="font-bold text-red-700">{med.name}</span>
-                    <span className="bg-red-200 text-red-800 text-xs px-2 py-1 rounded-lg font-black">
-                      Only {med.stock} left
+                    <span className="font-bold text-red-700 text-left">{med.name}</span>
+                    <span className="bg-red-200 text-red-800 text-xs px-2 py-1 rounded-lg font-black whitespace-nowrap ml-2">
+                      {med.warningReason}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <button
-                onClick={() => setShowLowStockWarning(false)}
-                className="w-full bg-slate-900 hover:bg-black text-white py-4 rounded-2xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-200"
-              >
-                I'll Refill Immediately
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowMedicineWarning(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-2xl font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setShowMedicineWarning(false);
+                    setActiveTab('Medicine Store');
+                  }}
+                  className="flex-1 bg-slate-900 hover:bg-black text-white py-3 rounded-2xl font-bold transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-slate-200"
+                >
+                  Restock
+                </button>
+              </div>
             </div>
           </div>
         </div>
