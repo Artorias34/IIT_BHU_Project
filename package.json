@@ -1,0 +1,8 @@
+{
+  "name": "codecure-root",
+  "private": true,
+  "scripts": {
+    "start": "cd frontend && npm start",
+    "build": "cd frontend && npm run build"
+  }
+}
